@@ -1,0 +1,8 @@
+{
+  "language": "简体中文",
+  "env": {
+    "CODEBUDDY_API_KEY": "ck_ftnh0zk3vuo0.Wn3cpai6etljc5uescc12UORk8KpTXH7yFlFpcg876s",
+    "MAX_THINKING_TOKENS": "10000"
+  },
+  "model": "deepseek-v4-pro"
+}
