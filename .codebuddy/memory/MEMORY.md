@@ -24,6 +24,7 @@
 
 ## 项目约定
 - 临时脚本统一放在 `.codebuddy/temp/python/` 目录（用户 2026-08-13 指定，以后也如此），不要堆在根目录。
+- 番茄小说发布工具：`.codebuddy/tools/fanqie-publisher-cli/`（基于 funnaz/fanqie-publisher-cli，Playwright 驱动系统 Edge）。登录态已持久化在同目录 `.fanqie-browser-profile/`，无需重复扫码。发布章节流程：md 正文 → 转 txt（去 markdown 加粗标记，首行"第X章 标题"，正文去掉标题行）→ 跑精简 playwright 脚本（launchPersistentContext + goto 草稿URL + 填标题/章节号/正文 + 点"存草稿" + 验证"已保存"）。关键坑：①PowerShell 中文路径乱码，须用 Python subprocess 传 cwd；②node 后台运行会让 Edge GUI 卡死，必须前台跑；③IDE 内置浏览器只能预览、不能自动化 DOM；④番茄无公开 API，全靠浏览器模拟。
 
 ## 当前写作状态
 - 已完成案件1-83，正文覆盖第1-1068章，无缺章断档

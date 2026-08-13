@@ -1,0 +1,16 @@
+node_modules/
+.fanqie-browser-profile/
+.fanqie-runs/
+.fanqie-schedules.json
+.fanqie-schedule-history.json
+.fanqie-projects.json
+.studio-ai-config.json
+.studio-runs/
+.studio-users.json
+.studio-users/
+.studio-initial-admin.txt
+*.log
+*.png
+*.html
+.DS_Store
+Thumbs.db
