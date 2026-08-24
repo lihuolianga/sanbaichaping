@@ -24,7 +24,9 @@
 
 ## 项目约定
 - 临时脚本统一放在 `.codebuddy/temp/python/` 目录（用户 2026-08-13 指定，以后也如此），不要堆在根目录。
-- 番茄小说发布工具：`.codebuddy/tools/fanqie-publisher-cli/`（基于 funnaz/fanqie-publisher-cli，Playwright 驱动系统 Edge）。登录态已持久化在同目录 `.fanqie-browser-profile/`，无需重复扫码。发布章节流程：md 正文 → 转 txt（去 markdown 加粗标记，首行"第X章 标题"，正文去掉标题行）→ 跑精简 playwright 脚本（launchPersistentContext + goto 草稿URL + 填标题/章节号/正文 + 点"存草稿" + 验证"已保存"）。关键坑：①PowerShell 中文路径乱码，须用 Python subprocess 传 cwd；②node 后台运行会让 Edge GUI 卡死，必须前台跑；③IDE 内置浏览器只能预览、不能自动化 DOM；④番茄无公开 API，全靠浏览器模拟。
+- 番茄小说发布工具：`.codebuddy/tools/fanqie-publisher-cli/`（基于 funnaz/fanqie-publisher-cli，Playwright 驱动系统 Edge）。登录态已持久化在同目录 `.fanqie-browser-profile/`，无需重复扫码。发布章节流程：md 正文 → 转 txt（去 markdown 加粗标记，首行"第X章 标题"，正文去掉标题行）→ 批量上传草稿 `launch_batch.py 起始 结束 间隔秒` → 逐章定时发布 `publish_schedule.js 章号 日期 时 分`。关键坑：①PowerShell 中文路径乱码，须用 Python subprocess 传 cwd 或用 `cmd /c`；②node 后台运行会让 Edge GUI 卡死，必须前台跑；③IDE 内置浏览器只能预览、不能自动化 DOM；④番茄无公开 API，全靠浏览器模拟。
+- **番茄发布节奏（2026-08-24 用户确认）**：每天 3 章，时间点 12:00 / 16:00 / 20:00。案件六之前是每天 2 章（12:00 / 16:00），案件七起改为每天 3 章。
+- **番茄标题重复是硬阻塞（2026-08-24 教训）**：章节标题若与番茄侧已发布章节重复，发布时番茄会弹"发布设置"确认弹窗且无法自动关闭（"确认发布"按钮点击无效），必须先按内容改新标题再发布。番茄侧已知标题库（29-65章）记录在 `.codebuddy/temp/python/case6_title_check.py` 的 tomato_titles 字典。发布新案件前必须核对标题。publish_schedule.js 已加 TITLE_OVERRIDES 表支持发布时改标题。
 
 ## 当前写作状态
 - 已完成案件1-83，正文覆盖第1-1068章，无缺章断档

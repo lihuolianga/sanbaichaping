@@ -15,6 +15,9 @@ const chapterNo = process.argv[2] || "44";
 const dateStr = process.argv[3] || "2026-08-15";
 const hour = process.argv[4] || "16";
 const minute = process.argv[5] || "00";
+// 标题覆盖表：用于标题与番茄侧已发布章节重复、需要按内容改名的章节
+const TITLE_OVERRIDES = { "79": "三份证词都是真话" };
+const newTitle = TITLE_OVERRIDES[chapterNo] || "";
 
 (async () => {
   const ctx = await chromium.launchPersistentContext(USER_DATA_DIR, { headless: false, executablePath: EDGE, viewport: { width: 1440, height: 1000 } });
@@ -51,6 +54,20 @@ const minute = process.argv[5] || "00";
   }));
   console.log(`第${chapterNo}章: 章节号=${cur.no} 标题=${cur.title}，定时到 ${dateStr} ${hour}:${minute}`);
 
+  // 若需要修改标题（标题与番茄侧重复时）
+  if (newTitle && newTitle !== cur.title) {
+    const titleSel = editorPage.locator("input.serial-input.serial-editor-input-hint-area.byte-input.byte-input-size-default").first();
+    if (await titleSel.count().catch(() => 0)) {
+      await titleSel.click({ timeout: 2000 }).catch(() => {});
+      await editorPage.keyboard.press("Control+A");
+      await editorPage.keyboard.press("Backspace");
+      await editorPage.keyboard.insertText(newTitle);
+      await wait(1500);
+      const v = await titleSel.inputValue().catch(() => "");
+      console.log("标题覆盖:", v === newTitle ? "OK=" + newTitle : "未生效(当前=" + v + ")");
+    }
+  }
+
   // 流程：下一步 → 提交(错别字) → 仅基础检测
   await clickBtn(editorPage, "下一步"); await wait(1500);
   await clickBtn(editorPage, "提交"); await wait(1500);
@@ -86,7 +103,11 @@ const minute = process.argv[5] || "00";
   await wait(800);
   await editorPage.locator(".arco-timepicker-list").nth(1).locator(".arco-timepicker-cell").filter({ hasText: new RegExp("^" + minute + "$") }).first().click({ timeout: 2000 }).catch(() => {});
   await wait(800);
-  await clickBtn(editorPage, "确定"); await wait(1000);
+  // 在时间面板容器内点"确定"按钮关闭面板（避免匹配到其他隐藏按钮）
+  const okBtn = editorPage.locator("[class*='timepicker-container'], [class*='picker-popup'], [class*='timepicker-footer']").locator("button").filter({ hasText: /确定/ }).last();
+  if (await okBtn.count().catch(() => 0)) { await okBtn.click({ timeout: 2000 }).catch(() => {}); }
+  else { await clickBtn(editorPage, "确定"); }
+  await wait(1200);
   console.log("时间:", await timeInput.inputValue().catch(() => "?"));
 
   // 检查面板是否关闭
@@ -98,10 +119,32 @@ const minute = process.argv[5] || "00";
 
   await editorPage.screenshot({ path: path.join(__dirname, "sched_before.png"), fullPage: true });
 
-  // 点确认发布
+  // 点确认发布（滚动到可见再点）
   console.log("=== 点确认发布 ===");
-  await clickBtn(editorPage, "确认发布");
+  const confirmBtn = editorPage.locator("button").filter({ hasText: /确认发布/ }).last();
+  if (await confirmBtn.count().catch(() => 0)) {
+    await confirmBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await wait(800);
+    await confirmBtn.click({ timeout: 3000 }).catch(() => {});
+  } else {
+    await clickBtn(editorPage, "确认发布");
+  }
   await wait(6000);
+
+  // 若仍停留在发布设置页，处理可能的二次确认弹窗（"确认发布"是 BUTTON，在 .arco-modal-footer）
+  if (editorPage.url().includes("modifydraft")) {
+    await editorPage.screenshot({ path: path.join(__dirname, "sched_confirm_retry.png"), fullPage: true });
+    const realBtn = editorPage.locator(".arco-modal-footer button.arco-btn-primary").last();
+    const btnInfo = await realBtn.evaluate(el => ({ disabled: el.disabled, text: el.textContent.trim(), cls: el.className })).catch(() => null);
+    console.log("弹窗确认按钮:", JSON.stringify(btnInfo));
+    if (await realBtn.count().catch(() => 0)) {
+      await realBtn.scrollIntoViewIfNeeded().catch(() => {});
+      await wait(500);
+      await realBtn.click({ force: true, timeout: 5000 }).catch(e => console.log("click err:", e.message));
+      console.log("已点击弹窗内'确认发布'BUTTON(Playwright原生)");
+    }
+    await wait(10000);
+  }
 
   const after = await editorPage.evaluate(() => {
     const isVis = el => { const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
