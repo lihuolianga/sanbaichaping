@@ -69,9 +69,16 @@ const newTitle = TITLE_OVERRIDES[chapterNo] || "";
   }
 
   // 流程：下一步 → 提交(错别字) → 仅基础检测
-  await clickBtn(editorPage, "下一步"); await wait(1500);
-  await clickBtn(editorPage, "提交"); await wait(1500);
-  await clickBtn(editorPage, "仅基础检测"); await wait(2500);
+  // 增强健壮性：每步点击后等待更久，并检查是否进入发布设置页
+  await clickBtn(editorPage, "下一步"); await wait(2500);
+  await clickBtn(editorPage, "提交"); await wait(2500);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await clickBtn(editorPage, "仅基础检测"); await wait(5000);
+    const checkSwitch = await editorPage.locator("button[role='switch'].arco-switch").count().catch(() => 0);
+    if (checkSwitch > 0) break;
+    console.log(`第${attempt + 1}次点仅基础检测后未见定时发布开关，重试`);
+    await clickBtn(editorPage, "上一步"); await wait(1500);
+  }
 
   // 开定时发布 switch
   const allSwitches = editorPage.locator("button[role='switch'].arco-switch");
